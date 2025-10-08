@@ -3,7 +3,7 @@ import os
 
 print(f"=== Integration Test (env={os.getenv('TEST_ENV')}) ===")
 
-PASS = True   # ✅ 測試通過 (改成 False 可模擬失敗)
+PASS = False
 
 if PASS:
     print("✅ Integration tests passed.")
