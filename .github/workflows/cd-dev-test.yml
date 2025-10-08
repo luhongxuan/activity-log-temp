@@ -1,4 +1,4 @@
-name: CI Dev Deployment
+name: CI Dev Deployment Test
 on:
   push:
     branches: [ master ]
