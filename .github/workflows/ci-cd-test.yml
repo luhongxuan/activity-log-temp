@@ -1,4 +1,4 @@
-name: CI/CD Deployment Pipeline
+name: CI/CD Deployment Pipeline Test
 
 on:
   push:
@@ -52,7 +52,7 @@ jobs:
           TEST_ENV: unit
         run: |
           echo "Running Unit Tests (TEST_ENV=$TEST_ENV)..."
-          python ci/test_unit.py
+          python tests/test_unit.py
 
   # -----------------------------
   # 3. Integration Test 階段 (Python)
@@ -74,7 +74,7 @@ jobs:
           TEST_ENV: staging
         run: |
           echo "Running Integration Tests (TEST_ENV=$TEST_ENV)..."
-          python ci/test_integration.py
+          python tests/test_integration.py
 
   # -----------------------------
   # 4. Staging 部署 (測試通過才進行)
