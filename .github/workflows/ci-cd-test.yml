@@ -1,4 +1,4 @@
-name: CI/CD Deployment Pipeline Test
+name: CI/CD Deployment Pipeline
 
 on:
   push:
@@ -6,26 +6,35 @@ on:
       - master
 
 jobs:
+  # -----------------------------
+  # 1. Build 階段
+  # -----------------------------
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
-            bun-version: latest
+          bun-version: latest
+
       - name: Build
         run: |
           npm install
           npm run build
           zip -r build.zip .
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: build-artifact
           path: build.zip
 
+  # -----------------------------
+  # 2. Unit Test 階段 (Python)
+  # -----------------------------
   test-unit:
     needs: build
     runs-on: ubuntu-latest
@@ -43,8 +52,11 @@ jobs:
           TEST_ENV: unit
         run: |
           echo "Running Unit Tests (TEST_ENV=$TEST_ENV)..."
-          python tests/test_unit.py
+          python ci/test_unit.py
 
+  # -----------------------------
+  # 3. Integration Test 階段 (Python)
+  # -----------------------------
   test-integration:
     needs: test-unit
     runs-on: ubuntu-latest
@@ -62,15 +74,19 @@ jobs:
           TEST_ENV: staging
         run: |
           echo "Running Integration Tests (TEST_ENV=$TEST_ENV)..."
-          python tests/test_integration.py
+          python ci/test_integration.py
 
+  # -----------------------------
+  # 4. Staging 部署 (測試通過才進行)
+  # -----------------------------
   deploy-staging:
-    needs: build
+    needs: test-integration
     runs-on: ubuntu-latest
     environment: staging
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
@@ -86,23 +102,29 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NOTE: "Staging release for version ${{ env.VERSION }}"
+          TEST_ENV: staging
         run: |
           TAG="staging-v${{ env.VERSION }}"
           echo "Using tag: $TAG"
           gh release delete "$TAG" -y || true
           gh release create "$TAG" build.zip --notes "$NOTE"
 
+  # -----------------------------
+  # 5. Production 部署 (需人工審核)
+  # -----------------------------
   deploy-production:
     needs: deploy-staging
     runs-on: ubuntu-latest
-    environment: production
+    environment: production   # GitHub Environments 中要設 Required reviewer
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
           name: build-artifact
+
       - name: Get version from package.json
         id: version
         run: |
@@ -113,9 +135,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NOTE: "Production release for version ${{ env.VERSION }}"
+          TEST_ENV: prod
         run: |
           TAG="prod-v${{ env.VERSION }}"
           echo "Using tag: $TAG"
           gh release delete "$TAG" -y || true
           gh release create "$TAG" build.zip --notes "$NOTE"
-
