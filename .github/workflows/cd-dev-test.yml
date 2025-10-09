@@ -52,7 +52,7 @@ jobs:
       - name: Run Python Tests
         run: |
           echo "Running Python tests..."
-          python tests/mock_test.py
+          python ci/mock_test.py
 
   deploy-dev:
     needs: test
