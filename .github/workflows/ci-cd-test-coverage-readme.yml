@@ -50,7 +50,7 @@ jobs:
 
       - name: Generate Coverage Badge
         run: |
-          python ci/generate_badge.py
+          coverage-badge -o coverage.svg -f
 
       - name: Upload Coverage Reports
         uses: actions/upload-artifact@v4
