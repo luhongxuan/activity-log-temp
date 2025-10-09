@@ -196,4 +196,6 @@ Reference the `EVENT_EMOJI_MAP` input in the [Inputs](#inputs) table above for m
 
 - [@thedannicraft](https://www.github.com/thedannicraft)
 
+## Coverage
+
 ![Coverage](./coverage.svg)
