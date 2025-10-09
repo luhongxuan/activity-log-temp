@@ -1,0 +1,134 @@
+name: CI/CD Deployment Pipeline Test Coverage Readme
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      - name: Build
+        run: |
+          npm install
+          npm run build
+          zip -r build.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact
+          path: build.zip
+
+  test-unit:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # 允許寫入 README / push badge
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov coverage-badge
+
+      - name: Run Unit Tests with Coverage (80% 門檻)
+        env:
+          TEST_ENV: unit
+        run: |
+          echo "Running Unit Tests (TEST_ENV=$TEST_ENV)..."
+          pytest tests --cov=. --cov-report=term --cov-report=xml --cov-report=html --cov-fail-under=80
+
+      - name: Generate Coverage Badge
+        run: |
+          python ci/generate_badge.py
+
+      - name: Upload Coverage Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: htmlcov/
+
+      - name: Update Coverage Badge in README
+        run: |
+          echo "Updating coverage badge in README..."
+          # 找到 README.md 中的 ![Coverage] 標籤並更新 coverage.svg
+          if grep -q "coverage.svg" README.md; then
+            echo "Badge already exists — skipping insertion."
+          else
+            echo "![Coverage](./coverage.svg)" >> README.md
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add coverage.svg README.md
+          git commit -m "Update coverage badge [skip ci]" || echo "No changes to commit"
+          git push
+
+  test-integration:
+    needs: test-unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Integration Tests
+        env:
+          TEST_ENV: staging
+        run: python ci/test_integration.py
+
+  deploy-staging:
+    needs: [test-unit, test-integration]
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-artifact
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: Release Staging Build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NOTE: "Staging release for version ${{ env.VERSION }}"
+        run: |
+          TAG="staging-v${{ env.VERSION }}"
+          gh release delete "$TAG" -y || true
+          gh release create "$TAG" build.zip --notes "$NOTE"
+
+  deploy-production:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-artifact
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: Release Production Build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NOTE: "Production release for version ${{ env.VERSION }}"
+        run: |
+          TAG="prod-v${{ env.VERSION }}"
+          gh release delete "$TAG" -y || true
+          gh release create "$TAG" build.zip --notes "$NOTE"
