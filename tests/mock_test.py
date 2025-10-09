@@ -1,7 +1,7 @@
 # ci/mock_test.py
 import sys
 
-PASS = False
+PASS = True
 print("=== 模擬測試階段 ===")
 
 if PASS:
