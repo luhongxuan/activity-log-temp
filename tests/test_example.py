@@ -2,4 +2,4 @@ def add(a, b):
     return a + b
 
 def test_add():
-    return add(2, 3) == 5
+    return add(2, 3) == 7
