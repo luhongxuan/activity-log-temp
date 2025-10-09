@@ -63,7 +63,7 @@ jobs:
       - name: Run Integration Tests
         env:
           TEST_ENV: staging
-        run: python tests/test_integration.py
+        run: python ci/test_integration.py
 
   deploy-staging:
     needs: [test-unit, test-integration]
