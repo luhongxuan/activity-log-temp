@@ -2,7 +2,6 @@
 import sys
 
 PASS = False
-
 print("=== 模擬測試階段 ===")
 
 if PASS:

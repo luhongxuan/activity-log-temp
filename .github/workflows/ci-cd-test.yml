@@ -1,14 +1,12 @@
 name: CI/CD Deployment Pipeline Test
 
 on:
-  push:
-    branches:
-      - master
+  workflow_dispatch
+  # push:
+  #   branches:
+  #     - master
 
 jobs:
-  # -----------------------------
-  # 1. Build 階段
-  # -----------------------------
   build:
     runs-on: ubuntu-latest
     steps:
@@ -32,9 +30,6 @@ jobs:
           name: build-artifact
           path: build.zip
 
-  # -----------------------------
-  # 2. Unit Test 階段 (Python)
-  # -----------------------------
   test-unit:
     needs: build
     runs-on: ubuntu-latest
@@ -54,9 +49,6 @@ jobs:
           echo "Running Unit Tests (TEST_ENV=$TEST_ENV)..."
           python tests/test_unit.py
 
-  # -----------------------------
-  # 3. Integration Test 階段 (Python)
-  # -----------------------------
   test-integration:
     needs: test-unit
     runs-on: ubuntu-latest
@@ -76,9 +68,6 @@ jobs:
           echo "Running Integration Tests (TEST_ENV=$TEST_ENV)..."
           python tests/test_integration.py
 
-  # -----------------------------
-  # 4. Staging 部署 (測試通過才進行)
-  # -----------------------------
   deploy-staging:
     needs: test-integration
     runs-on: ubuntu-latest
@@ -109,13 +98,10 @@ jobs:
           gh release delete "$TAG" -y || true
           gh release create "$TAG" build.zip --notes "$NOTE"
 
-  # -----------------------------
-  # 5. Production 部署 (需人工審核)
-  # -----------------------------
   deploy-production:
     needs: deploy-staging
     runs-on: ubuntu-latest
-    environment: production   # GitHub Environments 中要設 Required reviewer
+    environment: production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
