@@ -196,6 +196,12 @@ Reference the `EVENT_EMOJI_MAP` input in the [Inputs](#inputs) table above for m
 
 - [@thedannicraft](https://www.github.com/thedannicraft)
 
-## Coverage
+## Status badges
+整體 CI 流程結果
+[![CI/CD Deployment Pipeline Test Coverage Readme](https://github.com/luhongxuan/activity-log-temp/actions/workflows/ci-cd-test-coverage-readme.yml/badge.svg?branch=main)](https://github.com/luhongxuan/activity-log-temp/actions/workflows/ci-cd-test-coverage-readme.yml)
 
+最新 Release 版本
+![Latest Release](https://img.shields.io/github/v/release/luhongxuan/activity-log-temp?sort=semver)
+
+Coverage
 ![Coverage](./coverage.svg)
