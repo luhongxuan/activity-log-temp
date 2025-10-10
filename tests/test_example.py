@@ -8,3 +8,4 @@ def check_sign(n):
 
 def test_check_sign():
     assert check_sign(10) == "positive"
+    assert check_sign(-10) == "negative"
